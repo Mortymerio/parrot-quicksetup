@@ -1,19 +1,57 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # ================================================
-# Parrot OS Quick Setup Script - by @tuvieja
-# Ejecutar con: curl -fsSL https://url-raw-del-script | bash
+# Parrot OS Quick Setup Script - by @tuvieja & Mortymerio
+# Versión corregida 2025 – funciona en Bash 5.x sin errores
+# Ejecutar con:
+# bash <(curl -fsSL https://raw.githubusercontent.com/Mortymerio/parrot-quicksetup/main/parrot-setup.sh)
 # ================================================
 
-echo "🚀 Configurando Parrot OS a tu gusto rapidito..."
+# ---------- Colores (compatible Bash 5.x) ----------
+RESET="\033[0m"
+RED="\033[31m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+MAGENTA="\033[35m"
+CYAN="\033[36m"
+WHITE="\033[37m"
+BOLD="\033[1m"
 
-# 1. Añadir alias permanentes al ~/.bashrc
+# ---------- Funciones de ayuda ----------
+print_banner() {
+    clear
+    echo -e "${RED}"
+    echo "   ____   __    __   ____   ____  _____  ____   __  __  ____  ____  ____ "
+    echo "  |    \ |  |  |  | |    \ |    \|     ||    \ |  \/  ||    ||    \|    \ "
+    echo "  |  o  )|  |  |  | |  D  )|  o  )   __||  o  )|      ||  o  )  o  )  o  )"
+    echo "  |     ||  |  |  | |    / |   _/|  |   |     ||  |\_  ||     |     |     |"
+    echo "  |  O  ||  :  :  | |    \ |  |  |  |   |  O  ||  |  | ||  O  |  O  |  O  |"
+    echo "  |_____||___\___\__||_____||__|  |__|   |_____||__|__||_____||_____||_____|${RESET}"
+    echo ""
+    echo -e "${YELLOW}          Configurando Parrot OS a tu gusto rapidito...${RESET}"
+    echo ""
+}
+
+progress() {
+    echo -ne "${CYAN}[*] $1...${RESET}"
+}
+
+success() {
+    echo -e "${GREEN} ✔${RESET}"
+}
+
+# ---------- Inicio ----------
+print_banner
+
+progress "Añadiendo alias permanentes a ~/.bashrc"
 cat >> ~/.bashrc << 'EOF'
 
-# === Mis alias de pentest rápidos ===
+# === Mis alias de pentest rápidos (by @tuvieja) ===
 alias ls='ls --color=auto'
 alias ll='ls -lah --color=auto'
 alias grep='grep --color=auto'
+alias ka='pkill -f'
+alias psg='ps aux | grep -v grep | grep -i --color=auto'
 
 nmapquick() { 
     [[ $# -eq 0 ]] && { echo "Uso: nmapquick IP"; return 1; }
@@ -45,71 +83,50 @@ nikto_scan() {
     nikto -h "$1" -Tuning x
 }
 
-# Actualizar sistema (Parrot/Kali)
 updatekali() { 
     echo "Actualizando sistema..."
     sudo apt update && sudo apt full-upgrade -y && sudo apt autoremove -y
 }
 
-# El famoso fuck (repetir último comando con sudo)
 fuck() { 
     sudo $(history -p !!)
 }
 
-# Buscar procesos rápido
-psg() { 
-    [[ $# -eq 0 ]] && return 1
-    ps aux | grep -v grep | grep -i --color=auto "$1"
-}
-
-# Matar proceso por nombre
-ka() { 
-    [[ $# -eq 0 ]] && return 1
-    pkill -f "$1" && echo "Proceso $1 terminado." || echo "No se encontró $1"
-}
-
 EOF
+success
 
-# 2. Recargar .bashrc inmediatamente
-source ~/.bashrc
-echo "✅ Alias cargados y activados"
+progress "Recargando .bashrc"
+source ~/.bashrc >/dev/null 2>&1
+success
 
-# 3. Descargar y poner fondo de pantalla (funciona en Parrot con XFCE)
+progress "Descargando fondo de pantalla hacker"
 WALLPAPER_DIR="$HOME/Imágenes"
-WALLPAPER_PATH="$WALLPAPER_DIR/wallhaven-e8885k.png"
+WALLPAPER_PATH="$WALLPAPER_DIR/wallhaven-hacker.png"
 WALLPAPER_URL="https://w.wallhaven.cc/full/e8/wallhaven-e8885k.png"
 
 mkdir -p "$WALLPAPER_DIR"
-
-echo "⬇️ Descargando fondo de pantalla..."
 if curl -fsSL "$WALLPAPER_URL" -o "$WALLPAPER_PATH"; then
-    echo "🖼️ Aplicando fondo de pantalla..."
-    # Método que funciona en Parrot OS (XFCE)
-    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitoreDP-1/workspace0/last-image -s "$WALLPAPER_PATH" 2>/dev/null
-    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorHDMI-1/workspace0/last-image -s "$WALLPAPER_PATH" 2>/dev/null
-    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/last-image -s "$WALLPAPER_PATH" 2>/dev/null
-    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVirtual1/workspace0/last-image -s "$WALLPAPER_PATH" 2>/dev/null
-    
-    # Estilo: escalado
-    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitoreDP-1/workspace0/image-style -t int -s 3 2>/dev/null || true
-    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/image-style -t int -s 3 2>/dev/null || true
-    echo "🖼️ Fondo de pantalla aplicado!"
+    # Aplicar en todos los monitores posibles (XFCE - Parrot OS)
+    for monitor in eDP-1 HDMI-1 DP-1 monitor0 monitorVirtual1; do
+        xfconf-query -c xfce4-desktop -p /backdrop/screen0/$monitor/workspace0/last-image -s "$WALLPAPER_PATH" 2>/dev/null || true
+        xfconf-query -c xfce4-desktop -p /backdrop/screen0/$monitor/workspace0/image-style -t int -s 3 2>/dev/null || true
+    done
+    success
+    echo -e "${GREEN}Fondo de pantalla aplicado!${RESET}"
 else
-    echo "❌ No se pudo descargar el fondo"
+    echo -e "${RED}No se pudo descargar el fondo${RESET}"
 fi
 
-# Mensaje final
+# ---------- Final ----------
 echo ""
-echo "🎉 ¡Todo listo!"
-echo "   Los alias ya están activos en esta terminal"
-echo "   Fondo de pantalla cambiado"
-echo "   Para nuevas terminales, los alias se cargarán automáticamente"
+echo -e "${BOLD}${MAGENTA}¡TODO LISTO, CRACK!${RESET}"
+echo -e "${WHITE}   Los alias ya están activos en esta terminal${RESET}"
+echo -e "${WHITE}   Abre una nueva terminal y prueba:${RESET}"
+echo -e "${CYAN}      nmapquick 10.10.10.10${RESET}"
+echo -e "${CYAN}      ffuf_web http://example.com /usr/share/wordlists/dirb/common.txt${RESET}"
+echo -e "${CYAN}      fuck   ← cuando te olvides el sudo${RESET}"
 echo ""
-echo "Prueba algunos:"
-echo "   nmapquick 10.10.10.10"
-echo "   ffuf_web http://example.com /usr/share/wordlists/dirb/common.txt"
-echo "   fuck   (cuando te olvides del sudo)"
+echo -e "${BOLD}${RED}¡Puto el que lee! 🏴‍☠️${RESET}"
 echo ""
-echo "¡Puto el que lee! 🏴‍☠️"
 
 exit 0
